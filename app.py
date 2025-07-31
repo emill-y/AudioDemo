@@ -301,21 +301,16 @@ def index():
     """Main page"""
     return render_template('index.html', countries=country_names)
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    """Handle file upload and prediction"""
+@app.route('/predict', methods=['POST'])
+def predict_audio():
+    """Handle audio prediction for the game"""
     try:
-        if 'audio_file' not in request.files:
-            return jsonify({'error': 'No file uploaded'}), 400
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file uploaded'}), 400
         
-        file = request.files['audio_file']
+        file = request.files['audio']
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
-        
-        # Check file extension
-        allowed_extensions = {'wav', 'mp3', 'm4a', 'flac'}
-        if not file.filename.lower().endswith(tuple('.' + ext for ext in allowed_extensions)):
-            return jsonify({'error': 'Invalid file type. Please upload WAV, MP3, M4A, or FLAC files.'}), 400
         
         # Save file
         filename = secure_filename(file.filename)
@@ -329,26 +324,17 @@ def upload_file():
         if error:
             return jsonify({'error': error}), 500
         
-        # Create visualization
-        visualization = create_audio_visualization(filepath)
-        
         # Clean up uploaded file
         os.remove(filepath)
         
         return jsonify({
             'success': True,
-            'predictions': predictions,
-            'visualization': visualization,
-            'filename': filename
+            'predictions': predictions
         })
         
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/demo')
-def demo():
-    """Demo page with sample audio files"""
-    return render_template('demo.html')
 
 @app.route('/about')
 def about():
