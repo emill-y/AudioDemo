@@ -1,0 +1,7 @@
+gradio>=3.49.0
+librosa>=0.10.0
+numpy
+scikit-learn
+pycountry>=22.3.5
+soundfile
+tensorflow
