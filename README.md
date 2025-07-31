@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Transformer Audio Classifier Demo
 
 A modern web application showcasing a Transformer-based audio classifier that can predict countries from audio samples with 97% accuracy.
@@ -296,3 +297,7 @@ For questions or issues:
 ---
 
 **Note**: This is a demo application. For production use, ensure proper security measures, error handling, and model optimization. 
+=======
+# AudioDemo
+# AudioDemo
+>>>>>>> e0eff3a567860619f924a061143cb932e33818ef
