@@ -14,6 +14,12 @@ import base64
 from datetime import datetime
 import uuid
 
+import tensorflow as tf
+import numpy as np
+from custom_layers import PositionalEncoding, EnhancedTransformerBlock
+
+
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -70,7 +76,10 @@ def load_model_and_preprocessors():
         for model_path in model_paths:
             if os.path.exists(model_path):
                 try:
-                    model = tf.keras.models.load_model(model_path)
+                    model = tf.keras.models.load_model(model_path, custom_objects={
+                            'PositionalEncoding': PositionalEncoding,
+                            'EnhancedTransformerBlock': EnhancedTransformerBlock
+                    })
                     print(f"✅ Model loaded from: {model_path}")
                     break
                 except Exception as e:
