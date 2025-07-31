@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}About - Audio Country Classifier{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Project Overview -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Project Overview
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <h4>Transformer Audio Classifier</h4>
+                    <p class="lead">Brain Inspired ML Final Project</p>
+                    <p><strong>Team:</strong> Akhil, Chris, Eisha, Jason, & Lakshman</p>
+                    
+                    <div class="alert alert-success">
+                        <i class="fas fa-trophy me-2"></i>
+                        <strong>97% Accuracy</strong> achieved with our Transformer-based model
+                    </div>
+                    
+                    <p>This Audio Classifier represents our second attempt at successfully classifying audio samples of country names. Our initial LSTM model had low accuracy, prompting us to explore Transformer architecture, which yielded significantly better results.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Technical Architecture
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Audio Processing Parameters</h5>
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr><td><strong>SAMPLE_RATE</strong></td><td>22050 Hz</td></tr>
+                                    <tr><td><strong>DURATION</strong></td><td>3 seconds</td></tr>
+                                    <tr><td><strong>N_MFCC</strong></td><td>26 coefficients</td></tr>
+                                    <tr><td><strong>N_MELS</strong></td><td>128 frequency bands</td></tr>
+                                    <tr><td><strong>N_FFT</strong></td><td>2048 window size</td></tr>
+                                    <tr><td><strong>HOP_LENGTH</strong></td><td>512 steps</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Model Architecture</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-brain text-primary me-2"></i>
+                                    <strong>Hybrid Transformer-CNN</strong>
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-layer-group text-success me-2"></i>
+                                    <strong>Multi-Head Attention</strong> with positional encoding
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-chart-line text-info me-2"></i>
+                                    <strong>Comprehensive Feature Extraction</strong>
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-random text-warning me-2"></i>
+                                    <strong>Advanced Data Augmentation</strong>
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-cog text-secondary me-2"></i>
+                                    <strong>GELU Activation</strong> for better performance
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Extraction -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-microchip me-2"></i>
+                        Audio Feature Extraction
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="fas fa-wave-square me-2"></i>
+                                        MFCC Features
+                                    </h6>
+                                    <p class="card-text">Mel-frequency cepstral coefficients with delta and delta-delta features for spectral analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">
+                                        <i class="fas fa-chart-area me-2"></i>
+                                        Mel-Spectrogram
+                                    </h6>
+                                    <p class="card-text">Mel-scale spectrogram with 128 frequency bands for detailed frequency analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-info">
+                                        <i class="fas fa-music me-2"></i>
+                                        Chroma Features
+                                    </h6>
+                                    <p class="card-text">Chroma vectors for pitch class analysis and harmonic content detection.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-warning">
+                                        <i class="fas fa-chart-bar me-2"></i>
+                                        Spectral Features
+                                    </h6>
+                                    <p class="card-text">Centroid, rolloff, bandwidth, and zero-crossing rate for spectral characteristics.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-danger">
+                                        <i class="fas fa-guitar me-2"></i>
+                                        Harmonic/Percussive
+                                    </h6>
+                                    <p class="card-text">Separated harmonic and percussive components for detailed audio analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-secondary">
+                                        <i class="fas fa-compress-alt me-2"></i>
+                                        Spectral Contrast
+                                    </h6>
+                                    <p class="card-text">Spectral contrast and tonnetz features for timbral analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Augmentation -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>
+                        Data Augmentation Techniques
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Time-based Augmentation</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-clock text-primary me-2"></i>
+                                    <strong>Time Stretching:</strong> 0.8x to 1.2x speed variations
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-arrows-alt-h text-success me-2"></i>
+                                    <strong>Time Shifting:</strong> Random temporal shifts
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-undo text-info me-2"></i>
+                                    <strong>Section Reversal:</strong> Partial audio reversal
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Frequency-based Augmentation</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-arrow-up text-warning me-2"></i>
+                                    <strong>Pitch Shifting:</strong> ±3 semitones
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-volume-up text-danger me-2"></i>
+                                    <strong>Volume Scaling:</strong> 0.6x to 1.4x amplitude
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-wave-square text-secondary me-2"></i>
+                                    <strong>Noise Addition:</strong> Gaussian noise injection
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Performance Metrics
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h2 class="display-4">97%</h2>
+                                    <p class="mb-0">Test Accuracy</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h2 class="display-4">15</h2>
+                                    <p class="mb-0">Countries</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <h2 class="display-4">15x</h2>
+                                    <p class="mb-0">Augmentation Factor</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h2 class="display-4">3s</h2>
+                                    <p class="mb-0">Audio Duration</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technology Stack -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>
+                        Technology Stack
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h5>Machine Learning</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fab fa-python text-primary me-2"></i>
+                                    TensorFlow 2.13.0
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-brain text-success me-2"></i>
+                                    Scikit-learn 1.3.0
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-chart-bar text-info me-2"></i>
+                                    NumPy 1.24.3
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h5>Audio Processing</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-music text-warning me-2"></i>
+                                    Librosa 0.10.1
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-wave-square text-danger me-2"></i>
+                                    SciPy 1.11.1
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-chart-line text-secondary me-2"></i>
+                                    Matplotlib 3.7.2
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h5>Web Framework</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fab fa-python text-primary me-2"></i>
+                                    Flask 2.3.3
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fab fa-html5 text-warning me-2"></i>
+                                    Bootstrap 5.3.0
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fab fa-js text-info me-2"></i>
+                                    Chart.js
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

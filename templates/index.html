@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Audio Country Classifier - Home{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-globe-americas text-primary me-3"></i>
+                Audio Country Classifier
+            </h1>
+            <p class="lead mb-4">
+                Upload an audio file and our Transformer-based model will predict which country the audio represents.
+                <br><strong>97% Accuracy</strong> achieved with advanced audio processing and deep learning.
+            </p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Supported formats:</strong> WAV, MP3, M4A, FLAC (max 16MB)
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>
+                        Upload Audio File
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="audioFile" class="form-label">Select Audio File</label>
+                            <input type="file" class="form-control" id="audioFile" name="audio_file" 
+                                   accept=".wav,.mp3,.m4a,.flac" required>
+                            <div class="form-text">Choose an audio file to analyze</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                <i class="fas fa-microphone me-2"></i>
+                                Analyze Audio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Section -->
+    <div class="row mt-4" id="loadingSection" style="display: none;">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 mb-0">Processing audio file...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row mt-4" id="resultsSection" style="display: none;">
+        <div class="col-lg-10 mx-auto">
+            <!-- Predictions -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Predictions
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div id="predictionsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Audio Visualization -->
+            <div class="card shadow-lg mb-4" id="visualizationCard" style="display: none;">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Audio Analysis
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <img id="audioVisualization" class="img-fluid" alt="Audio Visualization">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Section -->
+    <div class="row mt-4" id="errorSection" style="display: none;">
+        <div class="col-lg-8 mx-auto">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mt-5">
+        <div class="col-lg-10 mx-auto">
+            <h3 class="text-center mb-4">How It Works</h3>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-microphone fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Audio Input</h5>
+                            <p class="card-text">Upload audio files in various formats. Our system processes and normalizes the audio for analysis.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Transformer Model</h5>
+                            <p class="card-text">Advanced transformer architecture with 97% accuracy, using comprehensive audio feature extraction.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-globe fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Country Prediction</h5>
+                            <p class="card-text">Get detailed predictions with confidence scores for multiple countries based on audio characteristics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const loadingSection = document.getElementById('loadingSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const errorSection = document.getElementById('errorSection');
+    const predictionsContainer = document.getElementById('predictionsContainer');
+    const visualizationCard = document.getElementById('visualizationCard');
+    const audioVisualization = document.getElementById('audioVisualization');
+    const errorMessage = document.getElementById('errorMessage');
+
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(uploadForm);
+        const fileInput = document.getElementById('audioFile');
+        
+        if (!fileInput.files[0]) {
+            showError('Please select a file to upload.');
+            return;
+        }
+
+        // Show loading
+        showLoading();
+        hideResults();
+        hideError();
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showResults(data);
+            } else {
+                showError(data.error || 'An error occurred during processing.');
+            }
+        } catch (error) {
+            showError('Network error. Please try again.');
+        } finally {
+            hideLoading();
+        }
+    });
+
+    function showLoading() {
+        loadingSection.style.display = 'block';
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    }
+
+    function hideLoading() {
+        loadingSection.style.display = 'none';
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-microphone me-2"></i>Analyze Audio';
+    }
+
+    function showResults(data) {
+        // Display predictions
+        let predictionsHtml = '<div class="row">';
+        data.predictions.forEach((prediction, index) => {
+            const confidenceColor = index === 0 ? 'success' : index === 1 ? 'warning' : 'secondary';
+            predictionsHtml += `
+                <div class="col-md-4 mb-3">
+                    <div class="card border-${confidenceColor}">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">${prediction.rank === 1 ? '🥇' : prediction.rank === 2 ? '🥈' : '🥉'} ${prediction.country}</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-${confidenceColor}" style="width: ${prediction.confidence}%"></div>
+                            </div>
+                            <p class="card-text"><strong>${prediction.confidence}%</strong> confidence</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        predictionsHtml += '</div>';
+        predictionsContainer.innerHTML = predictionsHtml;
+
+        // Display visualization if available
+        if (data.visualization) {
+            audioVisualization.src = 'data:image/png;base64,' + data.visualization;
+            visualizationCard.style.display = 'block';
+        } else {
+            visualizationCard.style.display = 'none';
+        }
+
+        resultsSection.style.display = 'block';
+    }
+
+    function hideResults() {
+        resultsSection.style.display = 'none';
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorSection.style.display = 'block';
+    }
+
+    function hideError() {
+        errorSection.style.display = 'none';
+    }
+});
+</script>
+{% endblock %} 

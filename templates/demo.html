@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block title %}Demo - Audio Country Classifier{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Demo Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-play-circle text-primary me-3"></i>
+                Interactive Demo
+            </h1>
+            <p class="lead mb-4">
+                Try our audio classifier with sample audio files or record your own audio to test the model's capabilities.
+            </p>
+        </div>
+    </div>
+
+    <!-- Sample Audio Files -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-music me-2"></i>
+                        Sample Audio Files
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag-usa fa-3x text-primary mb-3"></i>
+                                    <h5 class="card-title">United States</h5>
+                                    <p class="card-text">Sample audio with American accent characteristics.</p>
+                                    <button class="btn btn-primary btn-sm" onclick="playSample('us')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag fa-3x text-success mb-3"></i>
+                                    <h5 class="card-title">United Kingdom</h5>
+                                    <p class="card-text">Sample audio with British accent characteristics.</p>
+                                    <button class="btn btn-success btn-sm" onclick="playSample('uk')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag fa-3x text-info mb-3"></i>
+                                    <h5 class="card-title">Canada</h5>
+                                    <p class="card-text">Sample audio with Canadian accent characteristics.</p>
+                                    <button class="btn btn-info btn-sm" onclick="playSample('canada')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag fa-3x text-warning mb-3"></i>
+                                    <h5 class="card-title">Australia</h5>
+                                    <p class="card-text">Sample audio with Australian accent characteristics.</p>
+                                    <button class="btn btn-warning btn-sm" onclick="playSample('australia')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag fa-3x text-danger mb-3"></i>
+                                    <h5 class="card-title">Germany</h5>
+                                    <p class="card-text">Sample audio with German accent characteristics.</p>
+                                    <button class="btn btn-danger btn-sm" onclick="playSample('germany')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-flag fa-3x text-secondary mb-3"></i>
+                                    <h5 class="card-title">France</h5>
+                                    <p class="card-text">Sample audio with French accent characteristics.</p>
+                                    <button class="btn btn-secondary btn-sm" onclick="playSample('france')">
+                                        <i class="fas fa-play me-1"></i>Play Sample
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Recorder -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-microphone me-2"></i>
+                        Record Your Own Audio
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <p class="lead">Click the button below to record your own audio sample</p>
+                        <button id="recordBtn" class="btn btn-success btn-lg" onclick="toggleRecording()">
+                            <i class="fas fa-microphone me-2"></i>
+                            Start Recording
+                        </button>
+                    </div>
+                    
+                    <div id="recordingStatus" class="alert alert-info" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="statusText">Ready to record</span>
+                    </div>
+                    
+                    <div id="audioPlayer" class="text-center" style="display: none;">
+                        <audio id="recordedAudio" controls class="mb-3"></audio>
+                        <br>
+                        <button class="btn btn-primary" onclick="analyzeRecording()">
+                            <i class="fas fa-brain me-2"></i>
+                            Analyze Recording
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Performance Demo -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Model Performance Overview
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Accuracy by Country</h5>
+                            <canvas id="accuracyChart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Confusion Matrix Heatmap</h5>
+                            <canvas id="confusionChart" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Comparison -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        Model Comparison
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Model Type</th>
+                                    <th>Accuracy</th>
+                                    <th>Training Time</th>
+                                    <th>Inference Speed</th>
+                                    <th>Memory Usage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="table-success">
+                                    <td><strong>Transformer (Current)</strong></td>
+                                    <td><span class="badge bg-success">97%</span></td>
+                                    <td>~2 hours</td>
+                                    <td>Fast</td>
+                                    <td>Medium</td>
+                                </tr>
+                                <tr class="table-danger">
+                                    <td>LSTM (Previous)</td>
+                                    <td><span class="badge bg-danger">~60%</span></td>
+                                    <td>~1 hour</td>
+                                    <td>Medium</td>
+                                    <td>Low</td>
+                                </tr>
+                                <tr class="table-info">
+                                    <td>CNN Baseline</td>
+                                    <td><span class="badge bg-info">~75%</span></td>
+                                    <td>~30 min</td>
+                                    <td>Very Fast</td>
+                                    <td>Low</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Features -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Interactive Features
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h5>Real-time Audio Analysis</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="realtimeAnalysis">
+                                <label class="form-check-label" for="realtimeAnalysis">
+                                    Enable real-time audio processing
+                                </label>
+                            </div>
+                            <small class="text-muted">Process audio as it's being recorded</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5>Confidence Threshold</h5>
+                            <input type="range" class="form-range" id="confidenceThreshold" min="0" max="100" value="70">
+                            <small class="text-muted">Minimum confidence: <span id="thresholdValue">70</span>%</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5>Feature Visualization</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="featureViz" checked>
+                                <label class="form-check-label" for="featureViz">
+                                    Show audio feature plots
+                                </label>
+                            </div>
+                            <small class="text-muted">Display MFCC, spectrogram, and other features</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h5>Prediction History</h5>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="predictionHistory">
+                                <label class="form-check-label" for="predictionHistory">
+                                    Save prediction history
+                                </label>
+                            </div>
+                            <small class="text-muted">Track your previous predictions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sample audio data (mock data for demo)
+const sampleAudioData = {
+    us: { country: 'United States', confidence: 95.2 },
+    uk: { country: 'United Kingdom', confidence: 92.8 },
+    canada: { country: 'Canada', confidence: 89.5 },
+    australia: { country: 'Australia', confidence: 87.3 },
+    germany: { country: 'Germany', confidence: 91.7 },
+    france: { country: 'France', confidence: 88.9 }
+};
+
+// Recording functionality
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+
+function playSample(country) {
+    // Mock function - in real implementation, you'd play actual audio files
+    const data = sampleAudioData[country];
+    if (data) {
+        showSampleResult(data);
+    }
+}
+
+function showSampleResult(data) {
+    const resultHtml = `
+        <div class="alert alert-success">
+            <h5><i class="fas fa-check-circle me-2"></i>Sample Analysis Complete</h5>
+            <p><strong>Predicted Country:</strong> ${data.country}</p>
+            <p><strong>Confidence:</strong> ${data.confidence}%</p>
+        </div>
+    `;
+    
+    // Create a temporary alert
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = resultHtml;
+    document.querySelector('.container').appendChild(alertDiv);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function toggleRecording() {
+    const recordBtn = document.getElementById('recordBtn');
+    const statusDiv = document.getElementById('recordingStatus');
+    const statusText = document.getElementById('statusText');
+    
+    if (!isRecording) {
+        startRecording();
+        recordBtn.innerHTML = '<i class="fas fa-stop me-2"></i>Stop Recording';
+        recordBtn.className = 'btn btn-danger btn-lg';
+        statusDiv.style.display = 'block';
+        statusText.textContent = 'Recording... Click to stop.';
+    } else {
+        stopRecording();
+        recordBtn.innerHTML = '<i class="fas fa-microphone me-2"></i>Start Recording';
+        recordBtn.className = 'btn btn-success btn-lg';
+        statusText.textContent = 'Recording stopped. Ready to analyze.';
+    }
+}
+
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = document.getElementById('recordedAudio');
+                audio.src = audioUrl;
+                document.getElementById('audioPlayer').style.display = 'block';
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+        })
+        .catch(error => {
+            console.error('Error accessing microphone:', error);
+            alert('Error accessing microphone. Please check permissions.');
+        });
+}
+
+function stopRecording() {
+    if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        isRecording = false;
+    }
+}
+
+function analyzeRecording() {
+    // Mock analysis - in real implementation, you'd send the audio to the server
+    const mockResult = {
+        predictions: [
+            { country: 'United States', confidence: 85.2, rank: 1 },
+            { country: 'Canada', confidence: 12.3, rank: 2 },
+            { country: 'United Kingdom', confidence: 2.5, rank: 3 }
+        ]
+    };
+    
+    showAnalysisResult(mockResult);
+}
+
+function showAnalysisResult(data) {
+    const resultHtml = `
+        <div class="alert alert-info">
+            <h5><i class="fas fa-brain me-2"></i>Analysis Results</h5>
+            <div class="row">
+                ${data.predictions.map(pred => `
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6>${pred.country}</h6>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" style="width: ${pred.confidence}%"></div>
+                                </div>
+                                <small>${pred.confidence}% confidence</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = resultHtml;
+    document.querySelector('.container').appendChild(alertDiv);
+}
+
+// Charts initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Accuracy Chart
+    const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+    new Chart(accuracyCtx, {
+        type: 'bar',
+        data: {
+            labels: ['US', 'UK', 'Canada', 'Australia', 'Germany', 'France'],
+            datasets: [{
+                label: 'Accuracy (%)',
+                data: [95, 92, 89, 87, 91, 88],
+                backgroundColor: [
+                    '#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6c757d', '#fd7e14'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Confusion Matrix Chart
+    const confusionCtx = document.getElementById('confusionChart').getContext('2d');
+    new Chart(confusionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Correct Predictions', 'Incorrect Predictions'],
+            datasets: [{
+                data: [97, 3],
+                backgroundColor: ['#28a745', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Confidence threshold slider
+    const thresholdSlider = document.getElementById('confidenceThreshold');
+    const thresholdValue = document.getElementById('thresholdValue');
+    thresholdSlider.addEventListener('input', function() {
+        thresholdValue.textContent = this.value;
+    });
+});
+</script>
+{% endblock %} 
