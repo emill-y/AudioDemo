@@ -41,19 +41,46 @@ def load_model_and_preprocessors():
     global model, label_encoder, scaler, country_names
     
     try:
-        # Load the model (you'll need to provide the actual model file)
-        # model = tf.keras.models.load_model('path_to_your_model.h5')
+        # Load the actual trained model
+        model_path = os.environ.get('MODEL_PATH', 'audio_country_enhanced_transformer_model.h5')
+        encoder_path = os.environ.get('ENCODER_PATH', 'label_encoder_enhanced_transformer.pkl')
+        scaler_path = os.environ.get('SCALER_PATH', 'feature_scaler_transformer.pkl')
         
-        # For demo purposes, we'll create a mock model
-        # In production, you'd load your actual trained model
         print("Loading model components...")
         
-        # Mock country names for demo
-        country_names = [
-            "United States", "United Kingdom", "Canada", "Australia", 
-            "Germany", "France", "Spain", "Italy", "Japan", "China",
-            "India", "Brazil", "Mexico", "Russia", "South Africa"
-        ]
+        # Load the trained model
+        if os.path.exists(model_path):
+            model = tf.keras.models.load_model(model_path)
+            print(f"✅ Model loaded from: {model_path}")
+        else:
+            print(f"⚠️  Model file not found: {model_path}")
+            print("Running in demo mode with mock predictions")
+            model = None
+        
+        # Load label encoder
+        if os.path.exists(encoder_path):
+            with open(encoder_path, 'rb') as f:
+                label_encoder = pickle.load(f)
+            country_names = label_encoder.classes_.tolist()
+            print(f"✅ Label encoder loaded with {len(country_names)} countries")
+        else:
+            print(f"⚠️  Label encoder not found: {encoder_path}")
+            # Use default country names
+            country_names = [
+                "United States", "United Kingdom", "Canada", "Australia", 
+                "Germany", "France", "Spain", "Italy", "Japan", "China",
+                "India", "Brazil", "Mexico", "Russia", "South Africa"
+            ]
+            label_encoder = None
+        
+        # Load feature scaler
+        if os.path.exists(scaler_path):
+            with open(scaler_path, 'rb') as f:
+                scaler = pickle.load(f)
+            print(f"✅ Feature scaler loaded")
+        else:
+            print(f"⚠️  Feature scaler not found: {scaler_path}")
+            scaler = None
         
         print(f"Loaded {len(country_names)} countries: {country_names}")
         
@@ -136,9 +163,24 @@ def predict_country(audio_file_path):
         # Extract features
         features = extract_comprehensive_features(audio)
         
-        # For demo purposes, we'll simulate predictions
-        # In production, you'd use your actual model
-        predictions = np.random.dirichlet(np.ones(len(country_names)), 1)[0]
+        # Use actual model if available, otherwise use mock predictions
+        if model is not None and scaler is not None:
+            # Preprocess features with the actual scaler
+            features_reshaped = features.reshape(1, -1)
+            features_scaled = scaler.transform(features_reshaped)
+            features_reshaped = features_scaled.reshape(1, features.shape[0], features.shape[1])
+            
+            # Make prediction
+            predictions = model.predict(features_reshaped, verbose=0)
+            predictions = predictions[0]  # Get first (and only) prediction
+            
+            print(f"Model prediction shape: {predictions.shape}")
+            print(f"Predictions: {predictions}")
+            
+        else:
+            # Mock predictions for demo
+            print("Using mock predictions (model not loaded)")
+            predictions = np.random.dirichlet(np.ones(len(country_names)), 1)[0]
         
         # Get top 3 predictions
         top_indices = np.argsort(predictions)[::-1][:3]
