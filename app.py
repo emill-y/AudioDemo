@@ -41,46 +41,82 @@ def load_model_and_preprocessors():
     global model, label_encoder, scaler, country_names
     
     try:
-        # Load the actual trained model
-        model_path = os.environ.get('MODEL_PATH', 'audio_country_enhanced_transformer_model.h5')
-        encoder_path = os.environ.get('ENCODER_PATH', 'label_encoder_enhanced_transformer.pkl')
-        scaler_path = os.environ.get('SCALER_PATH', 'feature_scaler_transformer.pkl')
+        # Try multiple model file extensions
+        model_paths = [
+            os.environ.get('MODEL_PATH', 'audio_country_enhanced_transformer_model.keras'),
+            'audio_country_enhanced_transformer_model.keras',
+            'audio_country_enhanced_transformer_model.h5',
+            'model.keras',
+            'model.h5'
+        ]
+        
+        encoder_paths = [
+            os.environ.get('ENCODER_PATH', 'label_encoder_enhanced_transformer.pkl'),
+            'label_encoder_enhanced_transformer.pkl',
+            'label_encoder.pkl',
+            'encoder.pkl'
+        ]
+        
+        scaler_paths = [
+            os.environ.get('SCALER_PATH', 'feature_scaler_transformer.pkl'),
+            'feature_scaler_transformer.pkl',
+            'scaler.pkl'
+        ]
         
         print("Loading model components...")
         
-        # Load the trained model
-        if os.path.exists(model_path):
-            model = tf.keras.models.load_model(model_path)
-            print(f"✅ Model loaded from: {model_path}")
-        else:
-            print(f"⚠️  Model file not found: {model_path}")
-            print("Running in demo mode with mock predictions")
-            model = None
+        # Load the trained model (try multiple formats)
+        model = None
+        for model_path in model_paths:
+            if os.path.exists(model_path):
+                try:
+                    model = tf.keras.models.load_model(model_path)
+                    print(f"✅ Model loaded from: {model_path}")
+                    break
+                except Exception as e:
+                    print(f"⚠️  Failed to load {model_path}: {e}")
+                    continue
+        
+        if model is None:
+            print("⚠️  No model file found. Running in demo mode with mock predictions")
         
         # Load label encoder
-        if os.path.exists(encoder_path):
-            with open(encoder_path, 'rb') as f:
-                label_encoder = pickle.load(f)
-            country_names = label_encoder.classes_.tolist()
-            print(f"✅ Label encoder loaded with {len(country_names)} countries")
-        else:
-            print(f"⚠️  Label encoder not found: {encoder_path}")
-            # Use default country names
+        label_encoder = None
+        for encoder_path in encoder_paths:
+            if os.path.exists(encoder_path):
+                try:
+                    with open(encoder_path, 'rb') as f:
+                        label_encoder = pickle.load(f)
+                    country_names = label_encoder.classes_.tolist()
+                    print(f"✅ Label encoder loaded with {len(country_names)} countries")
+                    break
+                except Exception as e:
+                    print(f"⚠️  Failed to load {encoder_path}: {e}")
+                    continue
+        
+        if label_encoder is None:
+            print("⚠️  No label encoder found. Using default country names")
             country_names = [
                 "United States", "United Kingdom", "Canada", "Australia", 
                 "Germany", "France", "Spain", "Italy", "Japan", "China",
                 "India", "Brazil", "Mexico", "Russia", "South Africa"
             ]
-            label_encoder = None
         
-        # Load feature scaler
-        if os.path.exists(scaler_path):
-            with open(scaler_path, 'rb') as f:
-                scaler = pickle.load(f)
-            print(f"✅ Feature scaler loaded")
-        else:
-            print(f"⚠️  Feature scaler not found: {scaler_path}")
-            scaler = None
+        # Load feature scaler (optional)
+        scaler = None
+        for scaler_path in scaler_paths:
+            if os.path.exists(scaler_path):
+                try:
+                    with open(scaler_path, 'rb') as f:
+                        scaler = pickle.load(f)
+                    print(f"✅ Feature scaler loaded")
+                    break
+                except Exception as e:
+                    print(f"⚠️  Failed to load {scaler_path}: {e}")
+                    continue
+        
+        if scaler is None:
+            print("⚠️  No feature scaler found. Will use raw features")
         
         print(f"Loaded {len(country_names)} countries: {country_names}")
         
@@ -164,19 +200,32 @@ def predict_country(audio_file_path):
         features = extract_comprehensive_features(audio)
         
         # Use actual model if available, otherwise use mock predictions
-        if model is not None and scaler is not None:
-            # Preprocess features with the actual scaler
-            features_reshaped = features.reshape(1, -1)
-            features_scaled = scaler.transform(features_reshaped)
-            features_reshaped = features_scaled.reshape(1, features.shape[0], features.shape[1])
-            
-            # Make prediction
-            predictions = model.predict(features_reshaped, verbose=0)
-            predictions = predictions[0]  # Get first (and only) prediction
-            
-            print(f"Model prediction shape: {predictions.shape}")
-            print(f"Predictions: {predictions}")
-            
+        if model is not None:
+            try:
+                # Preprocess features (with or without scaler)
+                features_reshaped = features.reshape(1, -1)
+                
+                if scaler is not None:
+                    # Use scaler if available
+                    features_scaled = scaler.transform(features_reshaped)
+                    features_reshaped = features_scaled.reshape(1, features.shape[0], features.shape[1])
+                    print("Using feature scaler")
+                else:
+                    # Use raw features if no scaler
+                    features_reshaped = features.reshape(1, features.shape[0], features.shape[1])
+                    print("Using raw features (no scaler)")
+                
+                # Make prediction
+                predictions = model.predict(features_reshaped, verbose=0)
+                predictions = predictions[0]  # Get first (and only) prediction
+                
+                print(f"Model prediction shape: {predictions.shape}")
+                print(f"Predictions: {predictions}")
+                
+            except Exception as e:
+                print(f"Error during model prediction: {e}")
+                print("Falling back to mock predictions")
+                predictions = np.random.dirichlet(np.ones(len(country_names)), 1)[0]
         else:
             # Mock predictions for demo
             print("Using mock predictions (model not loaded)")
