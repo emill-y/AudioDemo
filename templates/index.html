@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 Flag Guessing Game - Audio Country Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 Flag Guessing Game</h1>
+            <p>Powered by Transformer Audio Classifier (97% Accuracy!)</p>
+        </header>
+
+        <div class="game-area">
+            <div class="score-board">
+                <div class="score-item">
+                    <span class="score-label">Score:</span>
+                    <span id="score" class="score-value">0</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Round:</span>
+                    <span id="round" class="score-value">1</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Accuracy:</span>
+                    <span id="accuracy" class="score-value">0%</span>
+                </div>
+            </div>
+
+            <div class="flag-display">
+                <div id="flag-container">
+                    <div class="flag-emoji" id="flag-emoji">🏳️</div>
+                </div>
+                <p class="instruction">Look at this flag and say the country name!</p>
+            </div>
+
+            <div class="recording-section">
+                <div class="recording-controls">
+                    <button id="record-btn" class="record-button">
+                        <span class="record-icon">🎤</span>
+                        <span class="record-text">Start Recording</span>
+                    </button>
+                    <button id="submit-btn" class="submit-button" disabled>
+                        <span class="submit-icon">📤</span>
+                        <span class="submit-text">Submit Guess</span>
+                    </button>
+                </div>
+                
+                <div class="recording-status">
+                    <div id="recording-indicator" class="recording-indicator hidden">
+                        <div class="recording-dot"></div>
+                        <span>Recording... Speak now!</span>
+                    </div>
+                    <div id="audio-preview" class="audio-preview hidden">
+                        <audio id="audio-playback" controls></audio>
+                        <button id="re-record-btn" class="re-record-button">🔄 Record Again</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <div id="result-display" class="result-display hidden">
+                    <div class="result-header">
+                        <h3 id="result-title">🤖 AI Prediction:</h3>
+                    </div>
+                    <div class="result-content">
+                        <div class="prediction-main">
+                            <span id="prediction-text" class="prediction-text"></span>
+                            <span id="confidence-badge" class="confidence-badge"></span>
+                        </div>
+                        <div id="correctness" class="correctness"></div>
+                        <div class="result-details">
+                            <p><strong>Correct Answer:</strong> <span id="correct-answer"></span></p>
+                            <div id="top-predictions" class="top-predictions"></div>
+                        </div>
+                    </div>
+                    <button id="next-round-btn" class="next-round-button">
+                        <span>Next Round 🎯</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>🎮 How to Play:</h3>
+            <ol>
+                <li>Look at the flag emoji displayed above</li>
+                <li>Click "Start Recording" and clearly say the country name</li>
+                <li>Click "Submit Guess" to let the AI analyze your audio</li>
+                <li>See if the AI correctly identified what you said!</li>
+                <li>Try to get the highest accuracy score possible</li>
+            </ol>
+            <p class="note"><strong>Note:</strong> Speak clearly and in English. The AI was trained on various pronunciations!</p>
+        </div>
+
+        <footer>
+            <p>🧠 Brain Inspired ML Final Project | Team: Akhil, Chris, Eisha, Jason, & Lakshman</p>
+            <p>Transformer Model with 97% accuracy on country name classification</p>
+        </footer>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>🤖 AI is analyzing your audio...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
