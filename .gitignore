@@ -64,11 +64,10 @@ logs/
 .env.local
 .env.production
 
-# Model files (if large)
-*.h5
-*.pkl
-*.pth
-
 # Temporary files
 tmp/
-temp/ 
+temp/ *.keras
+*.h5
+# Large model files
+*.keras
+*.h5
