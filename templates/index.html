@@ -47,9 +47,7 @@
                 <!-- Result Display -->
                 <div id="resultDisplay" class="result-area" style="display: none;">
                     <div class="alert alert-info">
-                        <h5>🎯 Your Guess:</h5>
-                        <p id="userGuess" class="mb-2"></p>
-                        <h5>🤖 AI Prediction:</h5>
+                        <h5>🤖 AI Thought You Said:</h5>
                         <div id="aiPredictions"></div>
                     </div>
                 </div>
@@ -244,39 +242,39 @@ async function processAudio(audioBlob) {
 function showResults(result) {
     const predictions = result.predictions || [];
     const topPrediction = predictions[0];
-    
-    document.getElementById('userGuess').textContent = `You said: "${currentFlag}"`;
-    
-    let predictionsHtml = '<div class="row">';
-    predictions.slice(0, 3).forEach((pred, index) => {
+
+    // AI's top prediction
+    let html = '<div class="row">';
+    predictions.slice(0, 3).forEach(pred => {
         const isCorrect = pred.country === currentFlag;
-        const badgeClass = isCorrect ? 'bg-success' : 'bg-secondary';
-        const icon = isCorrect ? '✅' : '❌';
-        
-        predictionsHtml += `
+        html += `
             <div class="col-md-4">
                 <div class="card ${isCorrect ? 'border-success' : ''}">
                     <div class="card-body text-center">
-                        <h6>${flagMap[pred.country] || '🏳️'} ${pred.country}</h6>
-                        <span class="badge ${badgeClass}">${pred.confidence.toFixed(1)}%</span>
-                        ${isCorrect ? '<br><small class="text-success">Correct!</small>' : ''}
+                        <h3>${flagMap[pred.country] || '🏳️'}</h3>
+                        <h6 class="mb-2">${pred.country}</h6>
+                        <span class="badge ${isCorrect ? 'bg-success' : 'bg-secondary'}">
+                            ${pred.confidence.toFixed(1)}%
+                        </span>
+                        ${isCorrect ? '<div class="mt-2 text-success">✅ Correct!</div>' : ''}
                     </div>
                 </div>
             </div>
         `;
     });
-    predictionsHtml += '</div>';
-    
-    document.getElementById('aiPredictions').innerHTML = predictionsHtml;
+    html += '</div>';
+
+    document.getElementById('aiPredictions').innerHTML = html;
     document.getElementById('resultDisplay').style.display = 'block';
     document.getElementById('nextRoundBtn').style.display = 'block';
-    
-    // Update score if correct
+
+    // Update score ONLY if AI got it right
     if (topPrediction && topPrediction.country === currentFlag) {
         score++;
         document.getElementById('score').textContent = score;
     }
 }
+
 
 function nextRound() {
     currentRound++;
