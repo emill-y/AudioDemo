@@ -226,17 +226,33 @@ async function processAudio(audioBlob) {
     formData.append('audio', audioBlob, 'recording.wav');
     
     try {
+        // Show loading state
+        document.getElementById('resultDisplay').style.display = 'block';
+        document.getElementById('aiPrediction').innerHTML = 
+            '<div class="text-center"><div class="spinner-border text-primary"></div> Processing...</div>';
+        
         const response = await fetch('/predict', {
             method: 'POST',
             body: formData
         });
         
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
         const result = await response.json();
+        
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
         showResults(result);
         
     } catch (error) {
         console.error('Error processing audio:', error);
-        showResults({ error: 'Error processing audio' });
+        showResults({ 
+            error: error.message || 'Failed to process audio. Please try again.' 
+        });
     }
 }
 
