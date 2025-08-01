@@ -2,14 +2,23 @@ import os
 import numpy as np
 import librosa
 import tensorflow as tf
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import pickle
 import json
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
 from datetime import datetime
 import uuid
-import time
+
+import tensorflow as tf
+import numpy as np
 from custom_layers import PositionalEncoding, EnhancedTransformerBlock
+
+
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -19,14 +28,13 @@ app.config['SECRET_KEY'] = 'your-secret-key-here'
 # Create uploads directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Audio processing parameters
+# Audio processing parameters (same as your model)
 SAMPLE_RATE = 22050
 DURATION = 3
 N_MFCC = 26
 N_MELS = 128
 N_FFT = 2048
 HOP_LENGTH = 512
-TARGET_FRAMES = 130  # Number of frames expected by the model
 
 # Global variables for model and preprocessing
 model = None
@@ -41,6 +49,7 @@ def load_model_and_preprocessors():
     try:
         # Try multiple model file extensions
         model_paths = [
+            os.environ.get('MODEL_PATH', 'audio_country_enhanced_transformer_model.keras'),
             'audio_country_enhanced_transformer_model.keras',
             'audio_country_enhanced_transformer_model.h5',
             'model.keras',
@@ -48,34 +57,37 @@ def load_model_and_preprocessors():
         ]
         
         encoder_paths = [
+            os.environ.get('ENCODER_PATH', 'label_encoder_enhanced_transformer.pkl'),
             'label_encoder_enhanced_transformer.pkl',
-            'label_encoder.pkl'
+            'label_encoder.pkl',
+            'encoder.pkl'
         ]
         
         scaler_paths = [
+            os.environ.get('SCALER_PATH', 'feature_scaler_transformer.pkl'),
             'feature_scaler_transformer.pkl',
             'scaler.pkl'
         ]
         
         print("Loading model components...")
         
-        # Load the trained model
+        # Load the trained model (try multiple formats)
         model = None
         for model_path in model_paths:
             if os.path.exists(model_path):
                 try:
                     model = tf.keras.models.load_model(model_path, custom_objects={
-                        'PositionalEncoding': PositionalEncoding,
-                        'EnhancedTransformerBlock': EnhancedTransformerBlock
-                    })
+                            'PositionalEncoding': PositionalEncoding,
+                            'EnhancedTransformerBlock': EnhancedTransformerBlock
+                })
                     print(f"✅ Model loaded from: {model_path}")
                     break
                 except Exception as e:
-                    print(f"⚠️ Failed to load {model_path}: {e}")
+                    print(f"⚠️  Failed to load {model_path}: {e}")
                     continue
         
         if model is None:
-            print("⚠️ No model file found. Running in demo mode with mock predictions")
+            print("⚠️  No model file found. Running in demo mode with mock predictions")
         
         # Load label encoder
         label_encoder = None
@@ -88,11 +100,11 @@ def load_model_and_preprocessors():
                     print(f"✅ Label encoder loaded with {len(country_names)} countries")
                     break
                 except Exception as e:
-                    print(f"⚠️ Failed to load {encoder_path}: {e}")
+                    print(f"⚠️  Failed to load {encoder_path}: {e}")
                     continue
         
         if label_encoder is None:
-            print("⚠️ No label encoder found. Using default country names")
+            print("⚠️  No label encoder found. Using default country names")
             country_names = [
                 "United States", "United Kingdom", "Canada", "Australia", 
                 "Germany", "France", "Spain", "Italy", "Japan", "China",
@@ -106,14 +118,14 @@ def load_model_and_preprocessors():
                 try:
                     with open(scaler_path, 'rb') as f:
                         scaler = pickle.load(f)
-                    print("✅ Feature scaler loaded")
+                    print(f"✅ Feature scaler loaded")
                     break
                 except Exception as e:
-                    print(f"⚠️ Failed to load {scaler_path}: {e}")
+                    print(f"⚠️  Failed to load {scaler_path}: {e}")
                     continue
         
         if scaler is None:
-            print("⚠️ No feature scaler found. Will use raw features")
+            print("⚠️  No feature scaler found. Will use raw features")
         
         print(f"Loaded {len(country_names)} countries: {country_names}")
         
@@ -124,87 +136,66 @@ def load_model_and_preprocessors():
     return True
 
 def load_and_preprocess_audio(file_path, sr=SAMPLE_RATE, duration=DURATION):
-    """Load and preprocess audio file with error handling"""
+    """Load and preprocess audio file"""
     try:
-        # Load audio with librosa (resampling if needed)
-        audio, _ = librosa.load(
-            file_path, 
-            sr=sr, 
-            duration=duration, 
-            mono=True,
-            res_type='kaiser_fast'
-        )
-        
-        # Ensure audio is the correct length
+        audio, _ = librosa.load(file_path, sr=sr, duration=duration)
         target_length = sr * duration
         if len(audio) < target_length:
-            # Pad with silence if too short
             audio = np.pad(audio, (0, target_length - len(audio)), mode='constant')
         else:
-            # Trim if too long
             audio = audio[:target_length]
-            
-        # Normalize audio to prevent very quiet recordings
-        audio = librosa.util.normalize(audio) * 0.9  # Scale to 90% of maximum to avoid clipping
-        
         return audio
-        
     except Exception as e:
-        print(f"Error loading {file_path}: {str(e)}")
+        print(f"Error loading {file_path}: {e}")
         return None
 
 def extract_comprehensive_features(audio, sr=SAMPLE_RATE):
-    """Extract audio features with fixed size for model input"""
-    try:
-        features = []
-        
-        # MFCC features with fixed size
-        mfcc = librosa.feature.mfcc(
-            y=audio, 
-            sr=sr, 
-            n_mfcc=13,
-            n_fft=N_FFT,
-            hop_length=HOP_LENGTH
-        )
-        mfcc_delta = librosa.feature.delta(mfcc)
-        mfcc_delta2 = librosa.feature.delta(mfcc, order=2)
-        
-        # Ensure consistent shape
-        if mfcc.shape[1] < TARGET_FRAMES:
-            mfcc = np.pad(mfcc, ((0,0), (0,TARGET_FRAMES - mfcc.shape[1])), mode='constant')
-            mfcc_delta = np.pad(mfcc_delta, ((0,0), (0,TARGET_FRAMES - mfcc_delta.shape[1])), mode='constant')
-            mfcc_delta2 = np.pad(mfcc_delta2, ((0,0), (0,TARGET_FRAMES - mfcc_delta2.shape[1])), mode='constant')
-        else:
-            mfcc = mfcc[:, :TARGET_FRAMES]
-            mfcc_delta = mfcc_delta[:, :TARGET_FRAMES]
-            mfcc_delta2 = mfcc_delta2[:, :TARGET_FRAMES]
-            
-        features.extend([mfcc, mfcc_delta, mfcc_delta2])
-        
-        # Mel-spectrogram (fixed size)
-        mel_spec = librosa.feature.melspectrogram(
-            y=audio, 
-            sr=sr,
-            n_mels=128,
-            n_fft=N_FFT,
-            hop_length=HOP_LENGTH
-        )
-        mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
-        if mel_spec_db.shape[1] < TARGET_FRAMES:
-            mel_spec_db = np.pad(mel_spec_db, ((0,0), (0,TARGET_FRAMES - mel_spec_db.shape[1])), mode='constant')
-        else:
-            mel_spec_db = mel_spec_db[:, :TARGET_FRAMES]
-        features.append(mel_spec_db[:26])  # First 26 bands
-        
-        # Combine all features with normalization
-        combined = np.vstack(features)
-        combined = (combined - np.mean(combined, axis=1, keepdims=True)) / (np.std(combined, axis=1, keepdims=True) + 1e-8)
-        
-        return combined.T
-        
-    except Exception as e:
-        print(f"Feature extraction failed: {str(e)}")
-        return None
+    """Extract comprehensive audio features (same as your model)"""
+    features = []
+
+    # MFCC features
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=N_MFCC, n_fft=N_FFT, hop_length=HOP_LENGTH)
+    mfcc_delta = librosa.feature.delta(mfcc)
+    mfcc_delta2 = librosa.feature.delta(mfcc, order=2)
+    features.extend([mfcc, mfcc_delta, mfcc_delta2])
+
+    # Mel-spectrogram
+    mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=N_MELS, n_fft=N_FFT, hop_length=HOP_LENGTH)
+    mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+    features.append(mel_spec_db[:26])
+
+    # Chroma features
+    chroma = librosa.feature.chroma_stft(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    features.append(chroma)
+
+    # Spectral features
+    spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    zero_crossing_rate = librosa.feature.zero_crossing_rate(audio, hop_length=HOP_LENGTH)
+    features.extend([spectral_centroids, spectral_rolloff, spectral_bandwidth, zero_crossing_rate])
+
+    # Harmonic and percussive components
+    harmonic, percussive = librosa.effects.hpss(audio)
+    harmonic_mfcc = librosa.feature.mfcc(y=harmonic, sr=sr, n_mfcc=13, hop_length=HOP_LENGTH)
+    percussive_mfcc = librosa.feature.mfcc(y=percussive, sr=sr, n_mfcc=13, hop_length=HOP_LENGTH)
+    features.extend([harmonic_mfcc, percussive_mfcc])
+
+    # Spectral contrast
+    spectral_contrast = librosa.feature.spectral_contrast(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    features.append(spectral_contrast)
+
+    # Tonnetz
+    tonnetz = librosa.feature.tonnetz(y=audio, sr=sr, hop_length=HOP_LENGTH)
+    features.append(tonnetz)
+
+    # Combine all features
+    combined_features = np.vstack(features)
+
+    # Normalize features
+    combined_features = (combined_features - np.mean(combined_features, axis=1, keepdims=True)) / (np.std(combined_features, axis=1, keepdims=True) + 1e-8)
+
+    return combined_features.T
 
 def predict_country(audio_file_path):
     """Predict country from audio file"""
@@ -216,14 +207,22 @@ def predict_country(audio_file_path):
         
         # Extract features
         features = extract_comprehensive_features(audio)
-        if features is None:
-            return None, "Error extracting features from audio"
         
         # Use actual model if available, otherwise use mock predictions
         if model is not None:
             try:
-                # Reshape features for model input
-                features_reshaped = features.reshape(1, *features.shape)
+                # Preprocess features (with or without scaler)
+                features_reshaped = features.reshape(1, -1)
+                
+                if scaler is not None:
+                    # Use scaler if available
+                    features_scaled = scaler.transform(features_reshaped)
+                    features_reshaped = features_scaled.reshape(1, features.shape[0], features.shape[1])
+                    print("Using feature scaler")
+                else:
+                    # Use raw features if no scaler
+                    features_reshaped = features.reshape(1, features.shape[0], features.shape[1])
+                    print("Using raw features (no scaler)")
                 
                 # Make prediction
                 predictions = model.predict(features_reshaped, verbose=0)
@@ -245,10 +244,12 @@ def predict_country(audio_file_path):
         top_indices = np.argsort(predictions)[::-1][:3]
         results = []
         
-        for idx in top_indices:
+        for i, idx in enumerate(top_indices):
+            confidence = predictions[idx] * 100
             results.append({
                 'country': country_names[idx],
-                'confidence': float(predictions[idx] * 100)
+                'confidence': round(confidence, 2),
+                'rank': i + 1
             })
         
         return results, None
@@ -256,10 +257,58 @@ def predict_country(audio_file_path):
     except Exception as e:
         return None, f"Error during prediction: {str(e)}"
 
+def create_audio_visualization(audio_file_path):
+    """Create audio visualization plots"""
+    try:
+        audio, sr = librosa.load(audio_file_path, sr=SAMPLE_RATE)
+        
+        # Create figure with subplots
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+        
+        # Waveform
+        axes[0, 0].plot(np.linspace(0, len(audio)/sr, len(audio)), audio)
+        axes[0, 0].set_title('Waveform')
+        axes[0, 0].set_xlabel('Time (s)')
+        axes[0, 0].set_ylabel('Amplitude')
+        
+        # Spectrogram
+        D = librosa.amplitude_to_db(np.abs(librosa.stft(audio)), ref=np.max)
+        img = librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log', ax=axes[0, 1])
+        axes[0, 1].set_title('Spectrogram')
+        fig.colorbar(img, ax=axes[0, 1], format='%+2.0f dB')
+        
+        # MFCC
+        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+        img = librosa.display.specshow(mfcc, sr=sr, x_axis='time', ax=axes[1, 0])
+        axes[1, 0].set_title('MFCC')
+        fig.colorbar(img, ax=axes[1, 0])
+        
+        # Mel-spectrogram
+        mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=128)
+        mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+        img = librosa.display.specshow(mel_spec_db, sr=sr, x_axis='time', y_axis='mel', ax=axes[1, 1])
+        axes[1, 1].set_title('Mel-spectrogram')
+        fig.colorbar(img, ax=axes[1, 1], format='%+2.0f dB')
+        
+        plt.tight_layout()
+        
+        # Convert plot to base64 string
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        img_buffer.seek(0)
+        img_str = base64.b64encode(img_buffer.getvalue()).decode()
+        plt.close()
+        
+        return img_str
+        
+    except Exception as e:
+        print(f"Error creating visualization: {e}")
+        return None
+
 @app.route('/')
 def index():
-    """Main game page"""
-    return render_template('index.html')
+    """Main page"""
+    return render_template('index.html', countries=country_names)
 
 @app.route('/predict', methods=['POST'])
 def predict_audio():
@@ -272,19 +321,20 @@ def predict_audio():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        # Save file temporarily
-        filename = secure_filename(f"recording_{int(time.time())}.webm")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        # Save file
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(filepath)
         
-        # Verify file exists
-        if not os.path.exists(filepath):
-            return jsonify({'error': 'Failed to save audio file'}), 500
-            
         # Get predictions
         predictions, error = predict_country(filepath)
         if error:
             return jsonify({'error': error}), 500
+        
+        # Clean up uploaded file
+        os.remove(filepath)
         
         return jsonify({
             'success': True,
@@ -293,13 +343,17 @@ def predict_audio():
         
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-    finally:
-        # Clean up uploaded file
-        if 'filepath' in locals() and os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-            except:
-                pass
+
+
+@app.route('/about')
+def about():
+    """About page with project information"""
+    return render_template('about.html')
+
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint"""
+    return jsonify({'status': 'healthy', 'model_loaded': model is not None})
 
 if __name__ == '__main__':
     # Load model on startup
@@ -308,4 +362,4 @@ if __name__ == '__main__':
     else:
         print("Warning: Model not loaded. Running in demo mode.")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000) 
