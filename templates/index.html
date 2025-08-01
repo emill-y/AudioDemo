@@ -47,10 +47,9 @@
                 <!-- Result Display -->
                 <div id="resultDisplay" class="result-area" style="display: none;">
                     <div class="alert alert-info">
-                        <h5>🎯 Your Guess:</h5>
-                        <p id="userGuess" class="mb-2"></p>
                         <h5>🤖 AI Prediction:</h5>
-                        <div id="aiPredictions"></div>
+                        <div id="aiPrediction"></div>
+                        <p id="resultText" class="mt-2 fw-bold"></p>
                     </div>
                 </div>
 
@@ -237,45 +236,48 @@ async function processAudio(audioBlob) {
         
     } catch (error) {
         console.error('Error processing audio:', error);
-        showResults({ predictions: [{ country: 'Error', confidence: 0 }] });
+        showResults({ error: 'Error processing audio' });
     }
 }
 
 function showResults(result) {
-    const predictions = result.predictions || [];
-    const topPrediction = predictions[0];
-    
-    document.getElementById('userGuess').textContent = `You said: "${currentFlag}"`;
-    
-    let predictionsHtml = '<div class="row">';
-    predictions.slice(0, 3).forEach((pred, index) => {
-        const isCorrect = pred.country === currentFlag;
-        const badgeClass = isCorrect ? 'bg-success' : 'bg-secondary';
-        const icon = isCorrect ? '✅' : '❌';
-        
-        predictionsHtml += `
-            <div class="col-md-4">
-                <div class="card ${isCorrect ? 'border-success' : ''}">
-                    <div class="card-body text-center">
-                        <h6>${flagMap[pred.country] || '🏳️'} ${pred.country}</h6>
-                        <span class="badge ${badgeClass}">${pred.confidence.toFixed(1)}%</span>
-                        ${isCorrect ? '<br><small class="text-success">Correct!</small>' : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    predictionsHtml += '</div>';
-    
-    document.getElementById('aiPredictions').innerHTML = predictionsHtml;
     document.getElementById('resultDisplay').style.display = 'block';
-    document.getElementById('nextRoundBtn').style.display = 'block';
     
-    // Update score if correct
-    if (topPrediction && topPrediction.country === currentFlag) {
+    if (result.error) {
+        document.getElementById('aiPrediction').innerHTML = 
+            `<div class="alert alert-danger">${result.error}</div>`;
+        document.getElementById('resultText').textContent = '';
+        document.getElementById('nextRoundBtn').style.display = 'block';
+        return;
+    }
+    
+    const prediction = result.predictions[0];
+    const isCorrect = prediction.country === currentFlag;
+    
+    // Display the AI's prediction
+    document.getElementById('aiPrediction').innerHTML = `
+        <div class="d-flex justify-content-center align-items-center">
+            <span class="fs-3 me-2">${flagMap[prediction.country] || '🏳️'}</span>
+            <span class="fs-4">${prediction.country}</span>
+            <span class="badge bg-${isCorrect ? 'success' : 'secondary'} ms-2">
+                ${prediction.confidence.toFixed(1)}%
+            </span>
+        </div>
+    `;
+    
+    // Show result message
+    const resultText = document.getElementById('resultText');
+    if (isCorrect) {
+        resultText.textContent = '✅ Correct!';
+        resultText.className = 'mt-2 fw-bold text-success';
         score++;
         document.getElementById('score').textContent = score;
+    } else {
+        resultText.textContent = `❌ The correct answer was ${currentFlag} ${flagMap[currentFlag]}`;
+        resultText.className = 'mt-2 fw-bold text-danger';
     }
+    
+    document.getElementById('nextRoundBtn').style.display = 'block';
 }
 
 function nextRound() {
@@ -343,4 +345,4 @@ document.addEventListener('DOMContentLoaded', initializeGame);
     transform: translateY(-2px);
 }
 </style>
-{% endblock %} 
+{% endblock %}
