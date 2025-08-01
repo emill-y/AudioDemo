@@ -312,7 +312,6 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict_audio():
-    """Handle audio prediction for the game"""
     try:
         if 'audio' not in request.files:
             return jsonify({'error': 'No audio file uploaded'}), 400
@@ -320,38 +319,24 @@ def predict_audio():
         file = request.files['audio']
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
-        
-        # Save file
+
         filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        # ... (rest of file save code - as before) ...
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         correct_country = request.form.get('correct_country', '').strip()
 
-        
-        # Get predictions
         predictions, error = predict_country(filepath)
         if error:
-            return jsonify({'result': 'error', 'message': error}), 500
+            return jsonify({'error': error}), 500
 
-        # Remove uploaded file
         os.remove(filepath)
 
-        # Find the top-1 country's name
-        predicted_country = predictions[0]['country']  # depends on your predict_country return format
-
-        # Compare to user's actual target country (case-insensitive)
-        is_correct = (predicted_country.strip().lower() == correct_country.strip().lower())
-
-        return jsonify({
-            'result': 'correct' if is_correct else 'incorrect',
-            'transcript': predicted_country,
-        })
+        # The ONLY response for successful prediction:
+        return jsonify({'predictions': predictions})
 
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
-
 
 @app.route('/about')
 def about():
