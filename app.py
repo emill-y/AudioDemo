@@ -327,20 +327,28 @@ def predict_audio():
         unique_filename = f"{timestamp}_{uuid.uuid4().hex[:8]}_{filename}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(filepath)
+        correct_country = request.form.get('correct_country', '').strip()
+
         
         # Get predictions
         predictions, error = predict_country(filepath)
         if error:
-            return jsonify({'error': error}), 500
-        
-        # Clean up uploaded file
+            return jsonify({'result': 'error', 'message': error}), 500
+
+        # Remove uploaded file
         os.remove(filepath)
-        
+
+        # Find the top-1 country's name
+        predicted_country = predictions[0]['country']  # depends on your predict_country return format
+
+        # Compare to user's actual target country (case-insensitive)
+        is_correct = (predicted_country.strip().lower() == correct_country.strip().lower())
+
         return jsonify({
-            'success': True,
-            'predictions': predictions
+            'result': 'correct' if is_correct else 'incorrect',
+            'transcript': predicted_country,
         })
-        
+
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 

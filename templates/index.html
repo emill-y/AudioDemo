@@ -225,19 +225,19 @@ function stopRecording() {
 async function processAudio(audioBlob) {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.wav');
-    
+    // Send the correct answer for this round!
+    formData.append('correct_country', currentFlag);
+
     try {
         const response = await fetch('/predict', {
             method: 'POST',
             body: formData
         });
-        
         const result = await response.json();
         showResults(result);
-        
     } catch (error) {
         console.error('Error processing audio:', error);
-        showResults({ predictions: [{ country: 'Error', confidence: 0 }] });
+        showResults({ result: 'error', message: 'Error processing audio.' });
     }
 }
 
