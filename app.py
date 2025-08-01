@@ -79,7 +79,7 @@ def load_model_and_preprocessors():
                     model = tf.keras.models.load_model(model_path, custom_objects={
                             'PositionalEncoding': PositionalEncoding,
                             'EnhancedTransformerBlock': EnhancedTransformerBlock
-                    })
+                })
                     print(f"✅ Model loaded from: {model_path}")
                     break
                 except Exception as e:
@@ -136,119 +136,18 @@ def load_model_and_preprocessors():
     return True
 
 def load_and_preprocess_audio(file_path, sr=SAMPLE_RATE, duration=DURATION):
-    """Load and preprocess audio file with better error handling"""
+    """Load and preprocess audio file"""
     try:
-        # Load audio with librosa (resampling if needed)
-        audio, _ = librosa.load(file_path, sr=sr, duration=duration, mono=True)
-        
-        # Ensure audio is the correct length
+        audio, _ = librosa.load(file_path, sr=sr, duration=duration)
         target_length = sr * duration
         if len(audio) < target_length:
-            # Pad with silence if too short
             audio = np.pad(audio, (0, target_length - len(audio)), mode='constant')
         else:
-            # Trim if too long
             audio = audio[:target_length]
-            
-        # Normalize audio to prevent very quiet recordings
-        audio = librosa.util.normalize(audio)
-        
         return audio
-        
     except Exception as e:
-        print(f"Error loading {file_path}: {str(e)}")
+        print(f"Error loading {file_path}: {e}")
         return None
-
-@app.route('/predict', methods=['POST'])
-def predict_audio():
-    """Handle audio prediction with better error handling"""
-    try:
-        if 'audio' not in request.files:
-            return jsonify({'error': 'No audio file uploaded'}), 400
-        
-        file = request.files['audio']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Validate file size
-        file.seek(0, 2)  # Seek to end to get size
-        file_size = file.tell()
-        file.seek(0)
-        
-        if file_size > 5 * 1024 * 1024:  # 5MB max
-            return jsonify({'error': 'File too large (max 5MB)'}), 400
-        
-        # Save file with unique name
-        filename = secure_filename(f"recording_{int(time.time())}.wav")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        # Verify the file was saved
-        if not os.path.exists(filepath):
-            return jsonify({'error': 'Failed to save audio file'}), 500
-            
-        # Process the audio
-        audio = load_and_preprocess_audio(filepath)
-        if audio is None:
-            return jsonify({'error': 'Invalid audio file format'}), 400
-        
-        # Extract features
-        features = extract_comprehensive_features(audio)
-        if features is None:
-            return jsonify({'error': 'Failed to extract audio features'}), 500
-        
-        # Make prediction (using actual model if available)
-        if model is not None:
-            try:
-                # Reshape features for model input
-                features_reshaped = features.reshape(1, *features.shape)
-                
-                # Make prediction
-                predictions = model.predict(features_reshaped, verbose=0)[0]
-                
-                # Get top predictions
-                top_indices = np.argsort(predictions)[::-1][:3]
-                results = []
-                
-                for idx in top_indices:
-                    results.append({
-                        'country': country_names[idx],
-                        'confidence': float(predictions[idx] * 100)
-                    })
-                    
-                return jsonify({
-                    'success': True,
-                    'predictions': results
-                })
-                
-            except Exception as e:
-                print(f"Model prediction error: {str(e)}")
-                return jsonify({'error': 'Model prediction failed'}), 500
-                
-        else:
-            # Fallback mock predictions
-            mock_countries = ['United States', 'Canada', 'United Kingdom']
-            return jsonify({
-                'success': True,
-                'predictions': [
-                    {'country': mock_countries[0], 'confidence': 85.0},
-                    {'country': mock_countries[1], 'confidence': 10.0},
-                    {'country': mock_countries[2], 'confidence': 5.0}
-                ]
-            })
-            
-    except Exception as e:
-        print(f"Prediction endpoint error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-        
-    finally:
-        # Clean up uploaded file
-        if 'filepath' in locals() and os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-            except:
-                pass
-
 
 def extract_comprehensive_features(audio, sr=SAMPLE_RATE):
     """Extract comprehensive audio features (same as your model)"""
